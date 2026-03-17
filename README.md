@@ -1,3 +1,6 @@
+## This is a modified version of FAST-LIO2, without livox lidar support.
+
+
 ## Related Works and Extended Application
 
 **SLAM:**
