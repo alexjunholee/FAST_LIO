@@ -1,8 +1,7 @@
-// #include <ros/ros.h>
+// Simplified preprocess.h - PointCloud2 only (timestamp in curvature field)
 #include <rclcpp/rclcpp.hpp>
 #include <pcl_conversions/pcl_conversions.h>
 #include <sensor_msgs/msg/point_cloud2.hpp>
-#include <livox_ros_driver2/msg/custom_msg.hpp>
 
 using namespace std;
 
@@ -17,7 +16,7 @@ enum LID_TYPE
   VELO16,
   OUST64,
   MID360
-};  //{1, 2, 3}
+};
 enum TIME_UNIT
 {
   SEC = 0,
@@ -104,7 +103,6 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::Point,
     (float, y, y)
     (float, z, z)
     (float, intensity, intensity)
-    // use std::uint32_t to avoid conflicting with pcl::uint32_t
     (std::uint32_t, t, t)
     (std::uint16_t, reflectivity, reflectivity)
     (std::uint8_t, ring, ring)
@@ -112,50 +110,25 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::Point,
     (std::uint32_t, range, range)
 )
 
-namespace livox_ros
-{
-typedef struct {
-  float x;            /**< X axis, Unit:m */
-  float y;            /**< Y axis, Unit:m */
-  float z;            /**< Z axis, Unit:m */
-  float reflectivity; /**< Reflectivity   */
-  uint8_t tag;        /**< Livox point tag   */
-  uint8_t line;       /**< Laser line id     */
-} LivoxPointXyzrtl;
-}
-POINT_CLOUD_REGISTER_POINT_STRUCT(livox_ros::LivoxPointXyzrtl,
-    (float, x, x)
-    (float, y, y)
-    (float, z, z)
-    (float, reflectivity, reflectivity)
-    (uint8_t, tag, tag)
-    (uint8_t, line, line)
-)
-
 class Preprocess
 {
   public:
-//   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   Preprocess();
   ~Preprocess();
-  
-  void process(const livox_ros_driver2::msg::CustomMsg::UniquePtr &msg, PointCloudXYZI::Ptr &pcl_out);
+
   void process(const sensor_msgs::msg::PointCloud2::UniquePtr &msg, PointCloudXYZI::Ptr &pcl_out);
   void set(bool feat_en, int lid_type, double bld, int pfilt_num);
 
-  // sensor_msgs::PointCloud2::ConstPtr pointcloud;
   PointCloudXYZI pl_full, pl_corn, pl_surf;
-  PointCloudXYZI pl_buff[128]; //maximum 128 line lidar
-  vector<orgtype> typess[128]; //maximum 128 line lidar
+  PointCloudXYZI pl_buff[128];
+  vector<orgtype> typess[128];
   float time_unit_scale;
   int lidar_type, point_filter_num, N_SCANS, SCAN_RATE, time_unit;
   double blind;
   bool feature_enabled, given_offset_time;
-  // ros::Publisher pub_full, pub_surf, pub_corn;
 
 private:
-  void avia_handler(const livox_ros_driver2::msg::CustomMsg::UniquePtr &msg);
+  void avia_handler(const sensor_msgs::msg::PointCloud2::UniquePtr &msg);
   void oust64_handler(const sensor_msgs::msg::PointCloud2::UniquePtr &msg);
   void velodyne_handler(const sensor_msgs::msg::PointCloud2::UniquePtr &msg);
   void mid360_handler(const sensor_msgs::msg::PointCloud2::UniquePtr &msg);
@@ -165,7 +138,7 @@ private:
   int  plane_judge(const PointCloudXYZI &pl, vector<orgtype> &types, uint i, uint &i_nex, Eigen::Vector3d &curr_direct);
   bool small_plane(const PointCloudXYZI &pl, vector<orgtype> &types, uint i_cur, uint &i_nex, Eigen::Vector3d &curr_direct);
   bool edge_jump_judge(const PointCloudXYZI &pl, vector<orgtype> &types, uint i, Surround nor_dir);
-  
+
   int group_size;
   double disA, disB, inf_bound;
   double limit_maxmid, limit_midmin, limit_maxmin;
